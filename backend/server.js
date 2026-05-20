@@ -27,7 +27,7 @@ app.get("/",(req,res)=>
 app.post("/user",(req,res)=>
 {
     console.log(req.body);
-    res.send("data recieved");
+    res.send("data recieve");
 })
 
 
