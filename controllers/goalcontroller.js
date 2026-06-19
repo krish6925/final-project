@@ -140,36 +140,3 @@ export const approveGoal = async(req,res)=>{
 
 };
 
-export const lockGoal = async(req,res)=>{
-
-    try{
-
-        const goal = await Goal.findById(
-            req.params.id
-        );
-
-        if(!goal){
-
-            return res.status(404).json({
-                message:"Goal Not Found"
-            });
-
-        }
-
-        goal.status = "locked";
-
-        await goal.save();
-
-        res.status(200).json(goal);
-
-    }catch(error){
-
-        console.log(error);
-
-        res.status(500).json({
-            message:"Server Error"
-        });
-
-    }
-
-};
