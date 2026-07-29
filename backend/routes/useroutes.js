@@ -14,17 +14,28 @@ import {
 import protect from "../middleware/authmiddleware.js";
 import authorize from "../middleware/rolemiddleware.js";
 
+import {
+    assignDepartmentToManager,
+    assignEmployee,
+    getManagers,
+    getEmployees,
+    getManagersByDepartment
+} from "../controllers/userController.js";
+
 const router = express.Router();
 
-// Public routes
-router.post(
-  "/",
-  createUser
-);
 
 router.post(
-  "/login",
-  loginUser
+    "/",
+    createUser
+);
+
+
+
+
+router.post(
+    "/login",
+    loginUser
 );
 
 
@@ -67,6 +78,59 @@ router.delete(
   protect,
   authorize("admin"),
   rejectUser
+    "/profile",
+    protect,
+    getProfile
+);
+
+
+
+router.get(
+    "/all-users",
+    protect,
+    authorize("admin"),
+    getAllUsers
+);
+
+
+router.put(
+    "/assign-manager-department/:id",
+    protect,
+    authorize("admin"),
+    assignDepartmentToManager
+);
+
+router.put(
+    "/assign-employee/:id",
+    protect,
+    authorize("admin"),
+    assignEmployee
+);
+
+
+
+router.get(
+    "/managers",
+    protect,
+    authorize("admin"),
+    getManagers
+);
+
+
+
+router.get(
+    "/employees",
+    protect,
+    authorize("admin"),
+    getEmployees
+);
+
+
+router.get(
+    "/managers/department/:departmentId",
+    protect,
+    authorize("admin"),
+    getManagersByDepartment
 );
 
 export default router;
