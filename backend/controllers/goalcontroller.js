@@ -1,7 +1,26 @@
 import Goal from "../models/goals.js";
 
+
+
+
 export const createGoal = async (req, res) => {
+
     try {
+        const employee = req.user;
+
+// Check if employee is assigned to a department
+if (!employee.department) {
+    return res.status(400).json({
+        message: "Department not assigned. Contact Admin."
+    });
+}
+
+// Check if employee is assigned to a manager
+if (!employee.manager) {
+    return res.status(400).json({
+        message: "Manager not assigned. Contact Admin."
+    });
+}
 
         const {
             title,
@@ -50,13 +69,9 @@ export const getGoals = async (req, res) => {
 
     try {
 
-        const goals = await Goal.find({
-
-            employee: req.user._id
-
-        });
-
-        res.status(200).json(goals);
+       const goals = await Goal.find({
+    employee: req.user._id
+}).populate("employee", "name");
 
     } catch (error) {
 
@@ -222,37 +237,35 @@ export const approveGoal = async (req, res) => {
 
     try {
 
-        const goal = await Goal.findById(req.params.id);
+      const goal = await Goal.findById(req.params.id).populate("employee");
 
-        if (!goal) {
+if (!goal) {
 
-            return res.status(404).json({
-                message: "Goal Not Found"
-            });
+    return res.status(404).json({
+        message: "Goal not found"
+    });
 
-        }
+}
 
-        if (goal.status === "locked") {
+// Check whether this employee belongs to the logged-in manager
+if (
+    goal.employee.manager.toString() !== req.user._id.toString()
+) {
 
-            return res.status(400).json({
-                message: "Goal Already Locked"
-            });
+    return res.status(403).json({
+        message: "You are not authorized to approve this goal."
+    });
 
-        }
+}
 
-        goal.status = "approved";
+goal.status = "approved";
+goal.approvedBy = req.user._id;
 
-        goal.approvedBy = req.user._id;
+await goal.save();
 
-        await goal.save();
+res.status(200).json(goal);
 
-        res.status(200).json({
-
-            message: "Goal Approved",
-
-            goal
-
-        });
+        
 
     } catch (error) {
 
@@ -419,28 +432,41 @@ export const getAllGoals = async (req, res) => {
 
     try {
 
-        const goals = await Goal.find()
+        // Admin can see every goal
+        if (req.user.role === "admin") {
 
-            .populate(
-                "employee",
-                "name email role"
-            )
+            const goals = await Goal.find()
+                .populate("employee", "name department");
 
-            .populate(
-                "approvedBy",
-                "name email"
+            return res.status(200).json(goals);
+
+        }
+
+        // Manager sees only goals of employees assigned to him
+        if (req.user.role === "manager") {
+
+            const goals = await Goal.find()
+                .populate("employee");
+
+            const filteredGoals = goals.filter(goal =>
+                goal.employee.manager &&
+                goal.employee.manager.toString() === req.user._id.toString()
             );
 
-        res.status(200).json(goals);
+            return res.status(200).json(filteredGoals);
+
+        }
+
+        return res.status(403).json({
+            message: "Access Denied"
+        });
 
     } catch (error) {
 
         console.log(error);
 
         res.status(500).json({
-
             message: "Server Error"
-
         });
 
     }
