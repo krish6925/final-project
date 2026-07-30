@@ -36,6 +36,11 @@ router.get(
     getGoals
 );
 
+
+// NOTE: this route must stay ABOVE "/:id" — Express matches routes in
+// registration order, so "/all-goals" would otherwise be swallowed by
+// the "/:id" handler (with id === "all-goals") and crash with a
+// CastError from Mongoose.
 router.get(
     "/all-goals",
     protect,
