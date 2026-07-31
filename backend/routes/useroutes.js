@@ -16,7 +16,6 @@ import authorize from "../middleware/rolemiddleware.js";
 
 const router = express.Router();
 
-// Public routes
 router.post(
   "/",
   createUser
