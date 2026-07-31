@@ -1,8 +1,5 @@
 import Goal from "../models/goals.js";
 
-
-
-
 export const createGoal = async (req, res) => {
 
     try {
@@ -247,7 +244,7 @@ if (!goal) {
 
 }
 
-// Check whether this employee belongs to the logged-in manager
+
 if (
     goal.employee.manager.toString() !== req.user._id.toString()
 ) {
@@ -442,7 +439,6 @@ export const getAllGoals = async (req, res) => {
 
         }
 
-        // Manager sees only goals of employees assigned to him
         if (req.user.role === "manager") {
 
             const goals = await Goal.find()
