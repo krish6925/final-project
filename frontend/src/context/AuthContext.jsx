@@ -57,14 +57,13 @@ export function AuthProvider({ children }) {
     try {
       const { data } = await registerRequest({ name, email, password, role });
 
-      // 🛑 CRITICAL GATE:
-      // If registering as Manager or Admin, DO NOT set local storage or user state!
+      
       if (role === "manager" || role === "admin" || data?.isApproved === false) {
         localStorage.removeItem("gc_token");
         localStorage.removeItem("gc_user");
         setUser(null);
       } else {
-        // Only Employees are logged in automatically
+      
         persistSession(data);
       }
 
