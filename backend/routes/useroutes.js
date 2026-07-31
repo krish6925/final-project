@@ -5,7 +5,7 @@ import {
     loginUser,
     getProfile,
     getAllUsers
-} from "../controllers/usercontroller.js";
+} from "../controllers/userController.js";
 
 import protect from "../middleware/authmiddleware.js";
 import authorize from "../middleware/rolemiddleware.js";
