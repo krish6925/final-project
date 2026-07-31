@@ -18,6 +18,8 @@ export default function Login() {
 
     try {
       const data = await login(form);
+
+      // Guard: Block unapproved Managers and Admins from signing in
       if ((data?.role === "manager" || data?.role === "admin") && data?.isApproved === false) {
         const roleLabel = data?.role === "admin" ? "Admin" : "Manager";
         setError(`Your ${roleLabel} account is pending database approval from an administrator.`);
@@ -28,7 +30,7 @@ export default function Login() {
       navigate(redirectTo, { replace: true });
     } catch (err) {
       console.error("Login failed:", err);
-  
+      // Extracts backend error message or fallback
       const errorMsg =
         err?.response?.data?.message || err?.message || "Invalid credentials or server unavailable.";
       setError(errorMsg);

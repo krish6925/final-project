@@ -89,6 +89,7 @@ export default function EmployeeDashboard() {
 
     try {
       setSubmitting(true);
+      // Trigger approval flow API
       alert("Goal sheet submitted to L1 Manager for review!");
       await loadGoals();
     } catch (err) {

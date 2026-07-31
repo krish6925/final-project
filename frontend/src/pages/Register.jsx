@@ -19,15 +19,21 @@ export default function Register() {
 
     try {
       const data = await register(form);
+
+      // 🛑 Explicit Gate: If registering as Manager or Admin, block navigation!
       if (form.role === "manager" || form.role === "admin" || data?.isApproved === false) {
         setApprovalPendingRole(form.role);
-        return; 
+        return; // Exits function here — DOES NOT NAVIGATE
       }
+
+      // Only Employees navigate directly to dashboard
       navigate(homeForRole(data.role), { replace: true });
     } catch (err) {
       setError(err?.message || "Could not complete registration.");
     }
   };
+
+  // Render Approval Screen for Manager or Admin
   if (approvalPendingRole) {
     const roleTitle = approvalPendingRole === "admin" ? "Admin" : "Manager";
     return (
