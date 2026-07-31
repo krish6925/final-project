@@ -5,7 +5,7 @@ import {
     loginUser,
     getProfile,
     getAllUsers
-} from "../controllers/userController.js";
+} from "../controllers/usercontroller.js";
 
 import protect from "../middleware/authmiddleware.js";
 import authorize from "../middleware/rolemiddleware.js";
@@ -16,7 +16,7 @@ import {
     getManagers,
     getEmployees,
     getManagersByDepartment
-} from "../controllers/userController.js";
+} from "../controllers/usercontroller.js";
 
 const router = express.Router();
 
