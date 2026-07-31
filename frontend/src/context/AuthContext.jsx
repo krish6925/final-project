@@ -19,7 +19,9 @@ export function AuthProvider({ children }) {
 
   const persistSession = (data) => {
     const { token, ...rest } = data;
-    localStorage.setItem("gc_token", token);
+    if (token) {
+      localStorage.setItem("gc_token", token);
+    }
     localStorage.setItem("gc_user", JSON.stringify(rest));
     setUser(rest);
   };
@@ -29,6 +31,15 @@ export function AuthProvider({ children }) {
     setAuthLoading(true);
     try {
       const { data } = await loginRequest({ email, password });
+
+      // Guard: Block unapproved Manager/Admin sessions
+      if ((data?.role === "manager" || data?.role === "admin") && data?.isApproved === false) {
+        localStorage.removeItem("gc_token");
+        localStorage.removeItem("gc_user");
+        setUser(null);
+        return data;
+      }
+
       persistSession(data);
       return data;
     } catch (err) {
@@ -45,7 +56,17 @@ export function AuthProvider({ children }) {
     setAuthLoading(true);
     try {
       const { data } = await registerRequest({ name, email, password, role });
-      persistSession(data);
+
+      
+      if (role === "manager" || role === "admin" || data?.isApproved === false) {
+        localStorage.removeItem("gc_token");
+        localStorage.removeItem("gc_user");
+        setUser(null);
+      } else {
+      
+        persistSession(data);
+      }
+
       return data;
     } catch (err) {
       const message = err?.response?.data?.message || "Unable to create your account. Please try again.";

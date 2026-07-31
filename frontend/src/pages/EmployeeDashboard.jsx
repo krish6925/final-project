@@ -6,6 +6,7 @@ import Loader from "../components/Loader";
 import RadialGauge from "../components/RadialGauge";
 import { useAuth } from "../context/AuthContext";
 import { fetchMyGoals, createGoalRequest, updateGoalRequest, deleteGoalRequest } from "../api/goals";
+import { validateGoalSheet } from "../utils/goalCalculations";
 
 export default function EmployeeDashboard() {
   const { user } = useAuth();
@@ -17,6 +18,7 @@ export default function EmployeeDashboard() {
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [submitSheetError, setSubmitSheetError] = useState("");
 
   const loadGoals = async () => {
     setLoading(true);
@@ -33,7 +35,6 @@ export default function EmployeeDashboard() {
 
   useEffect(() => {
     loadGoals();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const stats = useMemo(() => {
@@ -48,6 +49,10 @@ export default function EmployeeDashboard() {
   }, [goals]);
 
   const openCreate = () => {
+    if (goals.length >= 8) {
+      setLoadError("Maximum goal limit (8 goals) reached.");
+      return;
+    }
     setEditingGoal(null);
     setModalOpen(true);
   };
@@ -57,7 +62,7 @@ export default function EmployeeDashboard() {
     setModalOpen(true);
   };
 
-  const handleSubmit = async (values) => {
+  const handleSubmitGoal = async (values) => {
     setSubmitting(true);
     try {
       if (editingGoal) {
@@ -68,6 +73,26 @@ export default function EmployeeDashboard() {
         setGoals((prev) => [data, ...prev]);
       }
       setModalOpen(false);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleFinalSheetSubmit = async () => {
+    setSubmitSheetError("");
+    // System Validation Rules: Total = 100%, Min 10% per goal, Max 8 goals
+    const validation = validateGoalSheet(goals);
+    if (!validation.isValid) {
+      setSubmitSheetError(validation.error);
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      alert("Goal sheet submitted to L1 Manager for review!");
+      await loadGoals();
+    } catch (err) {
+      setSubmitSheetError(err?.response?.data?.message || "Error submitting goal sheet.");
     } finally {
       setSubmitting(false);
     }
@@ -88,9 +113,7 @@ export default function EmployeeDashboard() {
 
   const remainingWeightage = Math.max(
     0,
-    100 -
-      stats.totalWeightage +
-      (editingGoal ? Number(editingGoal.weightage) || 0 : 0)
+    100 - stats.totalWeightage + (editingGoal ? Number(editingGoal.weightage) || 0 : 0)
   );
 
   return (
@@ -103,14 +126,27 @@ export default function EmployeeDashboard() {
             <p className="eyebrow">Employee workspace</p>
             <h1>Hi {user?.name?.split(" ")[0]}, here&rsquo;s where your goals stand.</h1>
           </div>
-          <button type="button" className="btn btn-primary" onClick={openCreate}>
-            + New goal
-          </button>
+          <div className="header-actions">
+            <button type="button" className="btn btn-ghost" onClick={handleFinalSheetSubmit} disabled={submitting}>
+              Submit Goal Sheet
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={openCreate}
+              disabled={goals.length >= 8}
+            >
+              + New goal ({goals.length}/8)
+            </button>
+          </div>
         </div>
+
+        {submitSheetError ? <p className="form-error banner-error">{submitSheetError}</p> : null}
+        {loadError ? <p className="form-error banner-error">{loadError}</p> : null}
 
         <section className="stat-row fade-in-up" style={{ animationDelay: "60ms" }}>
           <div className="stat-card">
-            <span className="stat-value">{stats.total}</span>
+            <span className="stat-value">{stats.total} / 8</span>
             <span className="stat-label">Total goals</span>
           </div>
           <div className="stat-card">
@@ -126,19 +162,15 @@ export default function EmployeeDashboard() {
             <span className="stat-label">Needs attention</span>
           </div>
           <div className="stat-card stat-card-gauge">
-            <RadialGauge value={Math.min(stats.totalWeightage, 100)} size={56} stroke={5} label="of 100" />
-            <span className="stat-label">Weightage used</span>
+            <RadialGauge value={Math.min(stats.totalWeightage, 100)} size={56} stroke={5} label="of 100%" />
+            <span className="stat-label">Weightage Total</span>
           </div>
         </section>
-
-        {loadError ? <p className="form-error banner-error">{loadError}</p> : null}
 
         {loading ? (
           <Loader label="Loading your goals…" />
         ) : goals.length === 0 ? (
           <div className="empty-state fade-in-up">
-            <span className="corner corner-tl" />
-            <span className="corner corner-br" />
             <h3>No goals drafted yet</h3>
             <p>Start by drafting your first goal for this cycle &mdash; give it a thrust area and a weightage.</p>
             <button type="button" className="btn btn-primary" onClick={openCreate}>
@@ -165,39 +197,10 @@ export default function EmployeeDashboard() {
         open={modalOpen}
         initialData={editingGoal}
         onClose={() => setModalOpen(false)}
-        onSubmit={handleSubmit}
+        onSubmit={handleSubmitGoal}
         submitting={submitting}
         remainingWeightage={remainingWeightage}
       />
-
-      {confirmDelete ? (
-        <div className="modal-overlay" onMouseDown={(e) => e.target === e.currentTarget && setConfirmDelete(null)}>
-          <div className="modal-panel modal-panel-small" role="dialog" aria-modal="true">
-            <div className="modal-header">
-              <h2>Delete goal?</h2>
-              <button type="button" className="modal-close" onClick={() => setConfirmDelete(null)} aria-label="Close">
-                &times;
-              </button>
-            </div>
-            <p className="auth-subtext">
-              &ldquo;{confirmDelete.title}&rdquo; will be permanently removed. This can&rsquo;t be undone.
-            </p>
-            <div className="modal-actions">
-              <button type="button" className="btn btn-ghost" onClick={() => setConfirmDelete(null)}>
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="btn btn-danger"
-                onClick={() => handleDelete(confirmDelete)}
-                disabled={deletingId === confirmDelete._id}
-              >
-                {deletingId === confirmDelete._id ? "Deleting…" : "Delete goal"}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }

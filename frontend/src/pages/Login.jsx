@@ -15,12 +15,23 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
     try {
       const data = await login(form);
-      const redirectTo = location.state?.from || homeForRole(data.role);
+      if ((data?.role === "manager" || data?.role === "admin") && data?.isApproved === false) {
+        const roleLabel = data?.role === "admin" ? "Admin" : "Manager";
+        setError(`Your ${roleLabel} account is pending database approval from an administrator.`);
+        return;
+      }
+
+      const redirectTo = location.state?.from || homeForRole(data?.role);
       navigate(redirectTo, { replace: true });
     } catch (err) {
-      setError(err.message);
+      console.error("Login failed:", err);
+  
+      const errorMsg =
+        err?.response?.data?.message || err?.message || "Invalid credentials or server unavailable.";
+      setError(errorMsg);
     }
   };
 
@@ -65,7 +76,13 @@ export default function Login() {
           <form onSubmit={handleSubmit} className="auth-form">
             <label className="field">
               <span>Email</span>
-              <input type="email" required value={form.email} onChange={handleChange("email")} placeholder="you@company.com" />
+              <input
+                type="email"
+                required
+                value={form.email}
+                onChange={handleChange("email")}
+                placeholder="you@company.com"
+              />
             </label>
 
             <label className="field">

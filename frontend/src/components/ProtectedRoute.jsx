@@ -9,7 +9,7 @@ export function homeForRole(role) {
     case "manager":
       return "/manager";
     case "admin":
-      return "/manager"; // Change to "/admin" if you create an admin dashboard
+      return "/admin"; // Change to "/admin" if you create an admin dashboard
     default:
       return "/login";
   }

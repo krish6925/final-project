@@ -8,19 +8,43 @@ export default function Register() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: "", email: "", password: "", role: "employee" });
   const [error, setError] = useState("");
+  const [approvalPendingRole, setApprovalPendingRole] = useState(null);
 
   const handleChange = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setApprovalPendingRole(null);
+
     try {
       const data = await register(form);
+      if (form.role === "manager" || form.role === "admin" || data?.isApproved === false) {
+        setApprovalPendingRole(form.role);
+        return; 
+      }
       navigate(homeForRole(data.role), { replace: true });
     } catch (err) {
-      setError(err.message);
+      setError(err?.message || "Could not complete registration.");
     }
   };
+  if (approvalPendingRole) {
+    const roleTitle = approvalPendingRole === "admin" ? "Admin" : "Manager";
+    return (
+      <div className="auth-shell">
+        <div className="auth-card" style={{ maxWidth: "480px", margin: "2rem auto", textAlign: "center" }}>
+          <p className="eyebrow">Registration Submitted</p>
+          <h2>{roleTitle} Approval Pending</h2>
+          <p className="auth-subtext" style={{ marginTop: "1rem" }}>
+            Your request for a <strong>{roleTitle}</strong> account has been created in the database. An administrator must approve your account before you can log in.
+          </p>
+          <Link to="/login" className="btn btn-primary" style={{ marginTop: "1.5rem", display: "inline-block" }}>
+            Return to Sign In
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="auth-shell auth-shell-reverse">
@@ -28,7 +52,7 @@ export default function Register() {
         <div className="auth-card">
           <p className="eyebrow">Get started</p>
           <h2>Create your account</h2>
-          <p className="auth-subtext">Set up goals as an employee, or review and approve them as a manager.</p>
+          <p className="auth-subtext">Set up goals as an employee, or request access as a manager or admin.</p>
 
           <form onSubmit={handleSubmit} className="auth-form">
             <label className="field">
@@ -70,14 +94,25 @@ export default function Register() {
                 >
                   Manager
                 </button>
+                <button
+                  type="button"
+                  className={form.role === "admin" ? "role-option role-option-active" : "role-option"}
+                  onClick={() => setForm((prev) => ({ ...prev, role: "admin" }))}
+                >
+                  Admin
+                </button>
               </div>
-              <p className="field-hint field-hint-block">Admin accounts are provisioned separately by IT.</p>
+              <p className="field-hint field-hint-block">
+                {form.role === "employee"
+                  ? "Employees receive instant workspace access upon registration."
+                  : `${form.role.charAt(0).toUpperCase() + form.role.slice(1)} requests require manual admin approval before sign-in.`}
+              </p>
             </div>
 
             {error ? <p className="form-error">{error}</p> : null}
 
             <button type="submit" className="btn btn-primary btn-block" disabled={authLoading}>
-              {authLoading ? "Creating account…" : "Create account"}
+              {authLoading ? "Submitting request…" : "Create account"}
             </button>
           </form>
 
@@ -90,29 +125,9 @@ export default function Register() {
       <section className="auth-visual">
         <div className="auth-grid" aria-hidden="true" />
         <div className="auth-visual-content">
-          <svg className="compass-anim" viewBox="0 0 200 200" width="180" height="180" aria-hidden="true">
-            <circle cx="100" cy="100" r="86" className="compass-ring-outer" fill="none" strokeWidth="1" />
-            <circle cx="100" cy="100" r="70" className="compass-ring-inner" fill="none" strokeWidth="1" />
-            {Array.from({ length: 24 }).map((_, i) => (
-              <line
-                key={i}
-                x1="100"
-                y1="14"
-                x2="100"
-                y2={i % 6 === 0 ? "24" : "19"}
-                className="compass-tick"
-                transform={`rotate(${i * 15} 100 100)`}
-              />
-            ))}
-            <g className="compass-needle-group">
-              <path d="M100 40 L109 100 L100 160 L91 100 Z" className="compass-needle" />
-              <circle cx="100" cy="100" r="6" className="compass-pivot" />
-            </g>
-          </svg>
           <h1>Plan the quarter</h1>
           <p>
-            Every goal carries a thrust area, a measurable target and a weightage &mdash; so review
-            cycles stay quick and every commitment is accounted for.
+            Every goal carries a thrust area, a measurable target and a weightage &mdash; so review cycles stay quick.
           </p>
         </div>
       </section>
